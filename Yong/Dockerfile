@@ -13,4 +13,4 @@ RUN pip install --upgrade six
 RUN pip install keras
 
 # Copy sample code.
-COPY DeepST_Code /notebooks/DeepST_Code
+COPY ../../Climate_Analysis /notebooks/Climate_Analysis
