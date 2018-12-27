@@ -3,5 +3,16 @@
 *.pdf
 *.h5
 *.npy
+*.ipynb
 /Yong/sampes/scripts/papers/AAAI/BikeNYC/MODEL/
 /Yong/sampes/scripts/papers/AAAI/BikeNYC/RET/
+/Yong/DeepST_Code/
+/Yong/backup/
+/Yong/MODEL/
+/Yong/PIC/
+/Yong/RESULT/
+/Yong/results/
+/Data/
+/Yong/core
+
+
