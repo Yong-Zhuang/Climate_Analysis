@@ -11,6 +11,4 @@ nvidia-docker run --name climate_analysis -it -v 'your workspace':/notebooks/wor
     "image_data_format": "channels_first",
     "backend": "tensorflow"
 }
-7. Set Data path by:
-  export DATAPATH=/notebooks/samples/data
-8. Run experiments by : python /notebooks/samples/papers/AAAI17/BikeNYC/exptBikeNYC.py
+7. Run experiments by : python /notebooks/Climate_Analysis/Yong/python experiment.py -data 10 -forecast 0 -model convlstm -layers 1 -filters 40 -kernel s -norm 1 -gpu 2 -lr 0.0001
