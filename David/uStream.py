@@ -21,7 +21,7 @@ def unet(input_size,nlags):
     input1 = Input(input_size)
     input2 = Input(input_size)
     input3 = Input((nlags,))
-    my_init = keras.initializers.TruncatedNormal(mean=0.0, stddev=0.05, seed=9999)
+    my_init = keras.initializers.TruncatedNormal(mean=0.0, stddev=0.02, seed=9999)
     
     conv1 = Conv3D(64, 3, activation = 'relu', padding = 'same', data_format = 'channels_first',kernel_initializer=my_init)(input1)
     conv1 = Conv3D(64, 3, activation = 'relu', padding = 'same', data_format = 'channels_first',kernel_initializer=my_init)(conv1)
@@ -50,7 +50,7 @@ def unet(input_size,nlags):
 #    m1 = add([conv1,conv12])
 #    m1 = Conv3D(64, 3, activation = 'relu', padding = 'same', data_format = 'channels_first')(m1)
 #    m1 = Conv3D(64, 3, activation = 'relu', padding = 'same', data_format = 'channels_first')(m1)
-#    m1 = AveragePooling3D(pool_size=(3,2,2), data_format = 'channels_first')(m1)
+#    m1 = AveragePooling3D(pool_size=(1,2,2), data_format = 'channels_first')(m1)
 #    
 #    m2 = add([pool1,pool12])  
 #    m2 = Conv3D(32, 3, activation = 'relu', padding = 'same', data_format = 'channels_first')(m2)
@@ -68,7 +68,7 @@ def unet(input_size,nlags):
     m4 = AveragePooling3D(pool_size=(1,2,2), data_format = 'channels_first')(m4)
 #    m4 = Dropout(0.5)(m4)            
     f = Flatten()(m4)
-    f = Dense(32,activation='relu')(f)
+    f = Dense(16,activation='relu')(f)
     f = Dropout(0.5)(f)    
     f = Dense(1,activation ='relu')(f)    
 
@@ -84,10 +84,9 @@ input_size = (1,15,64,128)
 Nlags = 15
 
 fname_param = '/media/smalldave/Storage/GBM/LSTM/3d_mean_spread_best_parameters_{}.hdf5'.format('1_9')
-early_stopping = EarlyStopping(monitor='val_loss', patience=10,mode='auto')
+early_stopping = EarlyStopping(monitor='val_loss', patience=10,mode='auto',min_delta=100000)
 model_checkpoint = ModelCheckpoint(fname_param, verbose=1, save_best_only=True, mode='min',save_weights_only=True)
   
-
 inx = Dataset('/media/smalldave/Storage/GBM/LSTM/total_forecast_precipitation_mean_spread_input.nc')
 
 Px_mean = inx.variables['precipitation'][:,:,:,:,0]
@@ -97,21 +96,22 @@ Px_spread = inx.variables['precipitation'][:,:,:,:,1]
 Px_spread = Px_spread[:,np.newaxis,:,:,:]
 Px_spread = np.moveaxis(Px_spread,4,2)
 Qx = pd.read_csv('/media/smalldave/Storage/GBM/LSTM/X_Ganges.csv')
-Qx = np.array(Qx.loc[:,['Q_-1','Q_0']])
+Qx = np.array(Qx.loc[:,['Q_-1']])
 
 Qy = pd.read_csv('/media/smalldave/Storage/GBM/LSTM/Y_Ganges.csv')
 Qy = np.array(Qy.loc[:,'Q_15'])
 
-test_train = 3060
-train_validate = 3825
+test_train = 3825
+#train_validate = 3825
 Xtrain = [Px_mean[0:test_train,:,:,:,:],Px_spread[0:test_train,:,:,:,:],Qx[0:test_train]] 
-Xval = [Px_mean[test_train:train_validate,:,:,:,:],Px_spread[test_train:train_validate,:,:,:,:],Qx[test_train:train_validate]] 
-Xtest = [Px_mean[train_validate:,:,:,:,:],Px_spread[train_validate:,:,:,:,:],Qx[train_validate:]] 
+#Xval = [Px_mean[test_train:train_validate,:,:,:,:],Px_spread[test_train:train_validate,:,:,:,:],Qx[test_train:train_validate]] 
+#Xtest = [Px_mean[train_validate:,:,:,:,:],Px_spread[train_validate:,:,:,:,:],Qx[train_validate:]] 
+Xtest = [Px_mean[test_train:,:,:,:,:],Px_spread[test_train:,:,:,:,:],Qx[test_train:]] 
 
 trainingQ = Qy[0:test_train]
-valQ =  Qy[test_train:train_validate]
-testQ = Qy[train_validate:]
-
+#valQ =  Qy[test_train:train_validate]
+#testQ = Qy[train_validate:]
+testQ = Qy[test_train:]
 time,nlags=Qx.shape
 model = unet(input_size,nlags)
 
@@ -120,7 +120,8 @@ model.compile(loss='mse', optimizer='adam', metrics=['mse'])
 history = model.fit(Xtrain, trainingQ,
                 epochs=1000,
                 batch_size=30,
-                validation_data=(Xval,valQ),
+                validation_split=0.2,
+#                validation_data=(Xval,valQ),
                 callbacks=[early_stopping,model_checkpoint],
                 verbose=1)
 
