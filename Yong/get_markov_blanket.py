@@ -10,7 +10,7 @@ if __name__== "__main__":
     parser = argparse.ArgumentParser(description='castle')    
     parser.add_argument('-diff', metavar='int', required=True, help='0: use diff; 1: no') 
     parser.add_argument('-river', metavar='str', required=True, help='g: Ganges; b: Brahmaputra; m: Meghna') 
-    parser.add_argument('-norm', metavar='int', required=True, help='0: normalization diff; 1: no') 
+    parser.add_argument('-norm', metavar='int', required=True, help='0: normalization; 1: no') 
     args = parser.parse_args() 
     diff = int(args.diff)
     norm = int(args.norm)
@@ -56,7 +56,7 @@ if __name__== "__main__":
     df = pd.DataFrame(rf, columns = coor)
 
 
-    rainfall_save_path = "markov_blanket_for_rainfall_Ganges1.csv.gz"
+    rainfall_save_path = "markov_blanket_for_rainfall_"+args.river+".csv.gz"
     if os.path.exists(rainfall_save_path):
         mb_rf = pd.read_csv(rainfall_save_path)
         display(mb_rf)
