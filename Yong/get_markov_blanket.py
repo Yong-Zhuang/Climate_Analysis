@@ -17,39 +17,42 @@ if __name__== "__main__":
     norm = int(args.norm)
     isrf = int(args.rf)
     folder = "../Data/"
-    G_CSV_PATH = str(folder)+"X_Ganges.csv"
-    B_CSV_PATH = str(folder)+"X_Brahmaputra.csv"
-    M_CSV_PATH = str(folder)+"X_Meghna.csv"
-    if args.river == "g":
-        River_CSV_PATH = G_CSV_PATH
+    if river == "g":
+        FLOW_X_CSV_PATH = = str(folder)+"X_Ganges.csv"
+        FLOW_Y_CSV_PATH = = str(folder)+"Y_Ganges.csv"
     elif args.river == "b":
-        River_CSV_PATH = B_CSV_PATH
+        FLOW_X_CSV_PATH = str(folder)+"X_Brahmaputra.csv"
+        FLOW_Y_CSV_PATH = str(folder)+"Y_Brahmaputra.csv"
     else:
-        River_CSV_PATH = M_CSV_PATH
+        FLOW_X_CSV_PATH = str(folder)+"X_Meghna.csv"
+        FLOW_Y_CSV_PATH = str(folder)+"Y_Meghna.csv"
         
-    RF_CSV_PATH = str(folder)+"persiann_1_x_1_look20.npy"
-    FP_CSV_PATH = str(folder)+"total_forecast_precipitation_mean_spread_input.npy"
+    RF_OBSERVED_CSV_PATH = str(folder)+"persiann_1_x_1_look20.npy"
+    RF_PREDICTED_CSV_PATH = str(folder)+"total_forecast_precipitation_mean_spread_input.npy"
     LAT = np.arange(-19,45,1)
     LON = np.arange(60,188,1)
-
-    Qx_Ganges = pd.read_csv(River_CSV_PATH)
-    Qx_Ganges.head()
-    Qx = Qx_Ganges.loc[:,["Q_-1","Q_0","Q_1","Q_2"]]
-    Qx["diff"] = Qx["Q_1"] - Qx["Q_0"]
-    rf = np.load(RF_CSV_PATH)#(4896, 20, 64, 128)
-    rf = rf[:, -1, :, :]   
-
-    if diff == 0:
-        target = Qx["diff"]
-    elif isrf==0:
-        target = Qx["Q_1"]
-    else:
-	rf = np.load(FP_CSV_PATH)
+    Qx = pd.read_csv(FLOW_X_CSV_PATH)
+    Qy = pd.read_csv(FLOW_Y_CSV_PATH)
+    Q = pd.concat([Qx,Qy],axis = 1)
+    Q = Q.loc[:,["Q_-1","Q_0","Q_1","Q_2"]]
+    Q["diff_0"] = Q["Q_1"] - Q["Q_0"]
+    Q["diff_1"] = Q["Q_2"] - Q["Q_1"]
+    if isrf==0:
+        rf = np.load(RF_OBSERVED_CSV_PATH)#(4896, 20, 64, 128)
+        rf = rf[:, -1, :, :]   
+        if diff == 0:
+            target = Qx["diff_0"]
+        else:
+            target = Qx["Q_1"]
+    else:    
+        rf = np.load(RF_PREDICTED_CSV_PATH)
         rf = np.moveaxis(rf, 3, 1)
         rf = rf[:, :, :, :, 0]#(4896, 15, 64, 128)
-        rf = rf[:,0,:,:]
-	print ("here..........")
-        target = Qx["Q_1"]
+        rf = rf[:,0,:,:]  
+        if diff == 0:
+            target = Qx["diff_1"]
+        else:
+            target = Qx["Q_2"]  
 
 
     coor = []
