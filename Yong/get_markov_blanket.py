@@ -17,9 +17,9 @@ if __name__== "__main__":
     norm = int(args.norm)
     isrf = int(args.rf)
     folder = "../Data/"
-    if river == "g":
-        FLOW_X_CSV_PATH = = str(folder)+"X_Ganges.csv"
-        FLOW_Y_CSV_PATH = = str(folder)+"Y_Ganges.csv"
+    if args.river == "g":
+        FLOW_X_CSV_PATH = str(folder)+"X_Ganges.csv"
+        FLOW_Y_CSV_PATH = str(folder)+"Y_Ganges.csv"
     elif args.river == "b":
         FLOW_X_CSV_PATH = str(folder)+"X_Brahmaputra.csv"
         FLOW_Y_CSV_PATH = str(folder)+"Y_Brahmaputra.csv"
@@ -41,18 +41,18 @@ if __name__== "__main__":
         rf = np.load(RF_OBSERVED_CSV_PATH)#(4896, 20, 64, 128)
         rf = rf[:, -1, :, :]   
         if diff == 0:
-            target = Qx["diff_0"]
+            target = Q["diff_0"]
         else:
-            target = Qx["Q_1"]
+            target = Q["Q_1"]
     else:    
         rf = np.load(RF_PREDICTED_CSV_PATH)
         rf = np.moveaxis(rf, 3, 1)
         rf = rf[:, :, :, :, 0]#(4896, 15, 64, 128)
         rf = rf[:,0,:,:]  
         if diff == 0:
-            target = Qx["diff_1"]
+            target = Q["diff_1"]
         else:
-            target = Qx["Q_2"]  
+            target = Q["Q_2"]  
 
 
     coor = []
