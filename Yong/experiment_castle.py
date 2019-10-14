@@ -31,6 +31,9 @@ batch_size = 100  # batch size
 train_test = 3825
 
 def get_metrics(results, lead,y, pred):
+    y = y.flatten()
+    pred = pred.flatten()
+    print (y.shape,pred.shape)
     out = pd.DataFrame(data={"y": y, "pred": pred})
     print(out.T)
     m_mae = metrics.mean_absolute_error(y, pred)
@@ -63,8 +66,8 @@ if __name__== "__main__":
     test_esf, test_dsf,test_ob,test_fo,test_y_ob_sf,test_y_fo_sf = esf[train_test:], dsf[train_test:], ob[train_test:],fo[train_test:], y_ob_sf[train_test:],y_fo_sf[train_test:]
     
     print("training model...")
-    clf = castle.CASTLE(batch_size, nb_epoch,observed_conf=(look, input_observed.shape[-1]), forecasted_conf = (lead,input_forecasted.shape[-1]),latent_dim = 256,batchNormalization=False, regularization=False)
-    
+    clf = castle.CASTLE(batch_size, nb_epoch,observed_conf=(ob.shape[1], ob.shape[-1]), forecasted_conf = (fo.shape[1],fo.shape[-1]),latent_dim = 256,batchNormalization=False, regularization=False)
+    print (train_esf.shape, train_dsf.shape,train_ob.shape,train_fo.shape,train_y_ob_sf.shape,train_y_fo_sf.shape)
     clf.fit([train_esf, train_dsf,train_ob,train_fo], [train_y_ob_sf,train_y_fo_sf])
     
     
@@ -74,13 +77,14 @@ if __name__== "__main__":
     for lead in ["5 days","7 days","10 days","15 days"]:
         results[lead] = {}
         for metric in ["MAE", "RMSE", "R2"]:
-            results[model][metric] = 0
+            results[lead][metric] = 0
     
-    
-    
-    results = get_metrics(results,"5 days", test_dsf[:,5], prediction[:,5])
-    results = get_metrics(results,"7 days", test_dsf[:,7], prediction[:,7])
-    results = get_metrics(results,"10 days", test_dsf[:,10], prediction[:,10])
-    results = get_metrics(results,"15 days", test_dsf[:,15], prediction[:,15])
+    test_y_fo_sf = np.append(test_y_ob_sf[:,-1:,:],test_y_fo_sf,axis=1)
+    print(test_y_fo_sf.shape,prediction.shape)    
+    results = get_metrics(results,"5 days", test_y_fo_sf[:,4], prediction[:,4])
+    results = get_metrics(results,"7 days", test_y_fo_sf[:,6], prediction[:,6])
+    results = get_metrics(results,"10 days", test_y_fo_sf[:,9], prediction[:,9])
+    results = get_metrics(results,"15 days", test_y_fo_sf[:,14], prediction[:,14])
+    print (results)
     df_results = pd.DataFrame(results)
     df_results.to_csv("castle_result.csv.gz.", index=None, header=True, compression="gzip")  
