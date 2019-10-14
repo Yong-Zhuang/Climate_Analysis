@@ -38,23 +38,32 @@ class CASTLE:
         input_decoder_streamflow = Input(shape=(None, 1),name="leadtime_stream_flow_input")
         input_observed = Input(shape=(None,dim_ob),name="observed_rainfall_input")
         input_forecasted = Input(shape=(None,dim_fo),name="forecasted_rainfall_input")
-        hidden_observed_rainfall = TimeDistributed(Dense(1, activation='relu'), name="h_ob")(input_observed)
-	#print (hidden_observed_rainfall.shape)
-        #hidden_observed_rainfall = TimeDistributed(concatenate([hidden_observed_rainfall, input_encoder_streamflow]), name="conc_h_sf")
+        
+        encoder_input_dense = Dense(1, activation='relu',
+                        kernel_regularizer=regularizers.l2(0.01),
+                        activity_regularizer=regularizers.l2(0.01),
+                        bias_regularizer=regularizers.l2(0.01))
+        hidden_observed_rainfall = TimeDistributed(encoder_input_dense, name="h_ob")(input_observed)
+        hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
+        hidden_observed_rainfall = Dropout(0.2)(hidden_observed_rainfall)
         hidden_observed_rainfall = concatenate([hidden_observed_rainfall,input_encoder_streamflow],axis = 2, name = "conc_h_look")
-	#print (hidden_observed_rainfall.shape)
         encoder = LSTM(latent_dim, return_state=True, return_sequences=True, dropout=0.5, recurrent_dropout=0.0, name ='lstm_look')
         encoder_outputs, state_h, state_c = encoder(hidden_observed_rainfall)
         encoder_states = [state_h, state_c]
         pred_ob_sf = TimeDistributed(Dense(1, activation='relu'), name="out_ob_sf")(encoder_outputs)
 
-        hidden_forecasted_rainfall = TimeDistributed(Dense(1, activation='relu'), name="h_fo")(input_forecasted)
-        #hidden_forecasted_rainfall = TimeDistributed(concatenate([hidden_forecasted_rainfall, input_decoder_streamflow]), name="conc_h_sf")
-	hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,input_decoder_streamflow],axis = 2, name = 'conc_h_lead')
+        decoder_input_dense = Dense(1, activation='relu',
+                        kernel_regularizer=regularizers.l2(0.01),
+                        activity_regularizer=regularizers.l2(0.01),
+                        bias_regularizer=regularizers.l2(0.01))
+        hidden_forecasted_rainfall = TimeDistributed(decoder_input_dense, name="h_fo")(input_forecasted)
+        hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
+        hidden_forecasted_rainfall = Dropout(0.2)(hidden_forecasted_rainfall)
+        hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,input_decoder_streamflow],axis = 2, name = 'conc_h_lead')
         decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True, dropout=0.5, recurrent_dropout=0.0, name ='lstm_lead')
         decoder_outputs, _, _ = decoder_lstm(hidden_forecasted_rainfall,initial_state=encoder_states)
         decoder_dense = TimeDistributed(Dense(1, activation='relu'), name="out_fo_sf")
-	pred_fo_sf = decoder_dense(decoder_outputs)
+        pred_fo_sf = decoder_dense(decoder_outputs)
        
         self.model = Model([input_encoder_streamflow, input_decoder_streamflow, input_observed,input_forecasted], [pred_ob_sf,pred_fo_sf])
 
