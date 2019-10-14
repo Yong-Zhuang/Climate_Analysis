@@ -7,7 +7,6 @@ import operator
 import pandas as pd
 #from __future__ import print_function
 import os
-import cPickle as pickle
 import math
 import tensorflow as tf
 import matplotlib
