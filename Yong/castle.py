@@ -6,6 +6,7 @@ Created on Sat December 15 21:04:06 2018
 import os
 import numpy as np
 import keras
+from keras import regularizers
 from keras.models import Sequential
 from keras.layers.convolutional import Conv3D
 from keras.layers.convolutional_recurrent import ConvLSTM2D
@@ -20,10 +21,11 @@ from keras.layers import (
     concatenate,
     TimeDistributed,
     LSTM,
+    Dropout,
 )
 from keras.callbacks import EarlyStopping,  Callback, ReduceLROnPlateau
 from keras.models import Model
-
+from keras import optimizers
 
 class CASTLE:
 
@@ -39,35 +41,38 @@ class CASTLE:
         input_observed = Input(shape=(None,dim_ob),name="observed_rainfall_input")
         input_forecasted = Input(shape=(None,dim_fo),name="forecasted_rainfall_input")
         
-        encoder_input_dense = Dense(1, activation='relu',
+        encoder_input_dense = Dense(1000, activation='relu',
                         kernel_regularizer=regularizers.l2(0.01),
                         activity_regularizer=regularizers.l2(0.01),
                         bias_regularizer=regularizers.l2(0.01))
         hidden_observed_rainfall = TimeDistributed(encoder_input_dense, name="h_ob")(input_observed)
-        hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
-        hidden_observed_rainfall = Dropout(0.2)(hidden_observed_rainfall)
+        
+        hidden_observed_rainfall = Dropout(0.5)(hidden_observed_rainfall)
         hidden_observed_rainfall = concatenate([hidden_observed_rainfall,input_encoder_streamflow],axis = 2, name = "conc_h_look")
-        encoder = LSTM(latent_dim, return_state=True, return_sequences=True, dropout=0.5, recurrent_dropout=0.0, name ='lstm_look')
+        hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
+        encoder = LSTM(latent_dim, return_state=True, return_sequences=True, dropout=0.0, recurrent_dropout=0.0, name ='lstm_look')
         encoder_outputs, state_h, state_c = encoder(hidden_observed_rainfall)
         encoder_states = [state_h, state_c]
         pred_ob_sf = TimeDistributed(Dense(1, activation='relu'), name="out_ob_sf")(encoder_outputs)
 
-        decoder_input_dense = Dense(1, activation='relu',
+        decoder_input_dense = Dense(1000, activation='relu',
                         kernel_regularizer=regularizers.l2(0.01),
                         activity_regularizer=regularizers.l2(0.01),
                         bias_regularizer=regularizers.l2(0.01))
         hidden_forecasted_rainfall = TimeDistributed(decoder_input_dense, name="h_fo")(input_forecasted)
-        hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
-        hidden_forecasted_rainfall = Dropout(0.2)(hidden_forecasted_rainfall)
+        
+        hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
+        
         hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,input_decoder_streamflow],axis = 2, name = 'conc_h_lead')
-        decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True, dropout=0.5, recurrent_dropout=0.0, name ='lstm_lead')
+        hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
+        decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True, dropout=0, recurrent_dropout=0.0, name ='lstm_lead')
         decoder_outputs, _, _ = decoder_lstm(hidden_forecasted_rainfall,initial_state=encoder_states)
         decoder_dense = TimeDistributed(Dense(1, activation='relu'), name="out_fo_sf")
         pred_fo_sf = decoder_dense(decoder_outputs)
        
         self.model = Model([input_encoder_streamflow, input_decoder_streamflow, input_observed,input_forecasted], [pred_ob_sf,pred_fo_sf])
-
-        self.model.compile(loss="mse", optimizer="adam", metrics=["mae"])
+	adam = optimizers.Adam(lr=0.1)
+        self.model.compile(loss="mse", optimizer=adam, metrics=["mae"])
         print ("pred_ob_sf.shape is "+str(pred_ob_sf.shape))
         self.encoder_model = Model([input_encoder_streamflow, input_observed], [pred_ob_sf]+encoder_states)
 

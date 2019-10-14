@@ -19,7 +19,7 @@ class MRMRMB:
         self.temp_mb2 = pd.DataFrame(columns=["idx", "name", "p_value", "statistic"])
         self.mb = pd.DataFrame(columns=["idx", "name", "corr"])
         self.n_r, self.n_c = self.data.shape
-        print(f"the original data space has total {self.n_c} features")
+        print("the original data space has total "+str(self.n_c)+" features")
         # Phase I: remove irrelevance
         print("start phase I: remove irrelevance")
         for i in range(self.n_c):
@@ -40,7 +40,7 @@ class MRMRMB:
                 else:
                     continue
         self.temp_mb1 = self.temp_mb1.sort_values(by=["statistic"], ascending=False)
-        print(f"after remove irrelevance features, left {self.temp_mb1.shape[0]} features.")
+        print("after remove irrelevance features, left "+str(self.temp_mb1.shape[0])+" features.")
         # display(self.temp_mb1.head(n=24))
         # Markov boundry discovery
         # Phase II: forward
@@ -51,10 +51,10 @@ class MRMRMB:
             var_list = self.col_names[temp_mb["idx"].values.astype(int)]
             dis_corr = dcor.distance_correlation(data[var_list].values, target.values, exponent=2)
             if dis_corr > base_corr:
-                print("MB adds " + row["name"])
+                print("MB adds " + row["name"]+" index is "+str(index))
                 base_corr = dis_corr
                 self.temp_mb2 = self.temp_mb2.append(row, ignore_index=True)
-        print(f"after forward checking, left {self.temp_mb2.shape[0]} features.")
+        print("after forward checking, left "+str(self.temp_mb2.shape[0])+" features.")
         # display(self.temp_mb2.head(n=24))
         # Phase III: backward
         print("start phase III: backward checking")
@@ -68,6 +68,6 @@ class MRMRMB:
                 print("MB deletes " + row["name"])
                 base_corr = dis_corr
                 self.mb.drop(self.mb.loc[self.mb["idx"] == row["idx"]].index, inplace=True)
-        print(f"after backward checking, left {self.mb.shape[0]} features.")
+        print("after backward checking, left "+str(self.mb.shape[0])+" features.")
         self.mb = self.mb.sort_values(by=["statistic"], ascending=False)
         return self.mb
