@@ -26,7 +26,7 @@ import castle
 
 
 np.random.seed(1337)  # for reproducibility
-nb_epoch = 1000  # number of epoch at training stage
+nb_epoch = 2  # number of epoch at training stage
 batch_size = 100  # batch size
 train_test = 3825
 

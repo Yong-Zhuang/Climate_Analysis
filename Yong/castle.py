@@ -33,6 +33,7 @@ class CASTLE:
         self.MODEL_FOLDER = "./MODEL"
         self.batch_size=batch_size
         self.epochs=epochs
+        self.sf_dim = sf_dim
         
         look, dim_ob = observed_rf_conf
         lead, dim_fo = forecasted_rf_conf
@@ -144,8 +145,8 @@ class CASTLE:
         # Encode the input as state vectors.
         
         init_prediction, state_h, state_c = self.encoder_model.predict([input_encoder_streamflow,input_observed])
-        prediction = init_prediction[:,-1:]
-	print(init_prediction.shape, prediction.shape)
+        prediction = init_prediction[:,-self.sf_dim:]
+        print(init_prediction.shape, prediction.shape)
         input_decoder_streamflow = prediction
         # Sampling loop for a batch of sequences
         
@@ -153,7 +154,8 @@ class CASTLE:
             output, h, c = self.decoder_model.predict(
                 [input_decoder_streamflow,input_forecasted[:,i:i+1]] + [state_h,state_c])
 	    #print("output shape is "+str(output.shape))
-            input_decoder_streamflow = output[:,-1:]
+            input_decoder_streamflow = np.append(input_decoder_streamflow, output[:,-1:],axis = 1)
+            input_decoder_streamflow = input_decoder_streamflow[:,1:]
 	    #print (prediction.shape, input_decoder_streamflow.shape)
             prediction = np.append(prediction,input_decoder_streamflow, axis = 1)
 	
