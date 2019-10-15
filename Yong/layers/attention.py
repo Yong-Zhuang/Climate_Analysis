@@ -40,6 +40,7 @@ class AttentionLayer(Layer):
         """
         assert type(inputs) == list
         encoder_out_seq, decoder_out_seq = inputs
+        print("the shapes are: "+str(encoder_out_seq.shape)+";   "+str(decoder_out_seq.shape))
         if verbose:
             print("encoder_out_seq>", encoder_out_seq.shape)
             print("decoder_out_seq>", decoder_out_seq.shape)
@@ -93,6 +94,7 @@ class AttentionLayer(Layer):
             return c_i, [c_i]
 
         def create_inital_state(inputs, hidden_size):
+	    print("The hidden size is: "+str(hidden_size))
             # We are not using initial states, but need to pass something to K.rnn funciton
             fake_state = K.zeros_like(inputs)  # <= (batch_size, enc_seq_len, latent_dim
             fake_state = K.sum(fake_state, axis=[1, 2])  # <= (batch_size)
@@ -102,7 +104,7 @@ class AttentionLayer(Layer):
 
         fake_state_c = create_inital_state(encoder_out_seq, encoder_out_seq.shape[-1])
         fake_state_e = create_inital_state(
-            encoder_out_seq, encoder_out_seq.shape[1]
+            encoder_out_seq, tf.shape(encoder_out_seq)[1]
         )  # <= (batch_size, enc_seq_len, latent_dim
 
         """ Computing energy outputs """
