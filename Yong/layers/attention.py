@@ -34,13 +34,14 @@ class AttentionLayer(Layer):
 
         super(AttentionLayer, self).build(input_shape)  # Be sure to call this at the end
 
-    def call(self, inputs, verbose=False):
+    def call(self, inputs, verbose=True):
         """
         inputs: [encoder_output_sequence, decoder_output_sequence]
         """
         assert type(inputs) == list
         encoder_out_seq, decoder_out_seq = inputs
-        print("the shapes are: "+str(encoder_out_seq.shape)+";   "+str(decoder_out_seq.shape))
+	encoder_out_seq_shape = tf.shape(encoder_out_seq)
+	decoder_out_seq_shape = tf.shape(decoder_out_seq)
         if verbose:
             print("encoder_out_seq>", encoder_out_seq.shape)
             print("decoder_out_seq>", decoder_out_seq.shape)
@@ -52,7 +53,7 @@ class AttentionLayer(Layer):
             assert isinstance(states, list) or isinstance(states, tuple), assert_msg
 
             """ Some parameters required for shaping tensors"""
-            en_seq_len, en_hidden = encoder_out_seq.shape[1], encoder_out_seq.shape[2]
+            en_seq_len, en_hidden = encoder_out_seq_shape[1], encoder_out_seq_shape[2]
             de_hidden = inputs.shape[-1]
 
             """ Computing S.Wa where S=[s0, s1, ..., si]"""
