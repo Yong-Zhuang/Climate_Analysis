@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.python.keras.layers import Layer
-from tensorflow.python.keras import backend as K  # noqa
+from keras.layers import Layer
+from keras import backend as K  # noqa
 
 
 class AttentionLayer(Layer):
