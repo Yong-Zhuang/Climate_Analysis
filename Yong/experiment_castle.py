@@ -83,8 +83,9 @@ if __name__ == "__main__":
         [test_y_ob_sf, test_y_fo_sf],
     )
 
-    prediction = clf.predict(test_esf, test_ob, test_fo)
-
+    prediction, attention_weights = clf.predict(test_esf, test_ob, test_fo)
+    atten_df = pd.DataFrame(attention_weights)
+    atten_df.to_csv("attention_weights.csv.gz.", index=None, header=True, compression="gzip")
     results = {}
     for lead in ["5 days", "7 days", "10 days", "15 days"]:
         results[lead] = {}
