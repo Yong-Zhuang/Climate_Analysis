@@ -61,11 +61,26 @@ class CASTLE:
        # hidden_observed_rainfall = Dropout(0.5)(hidden_observed_rainfall)        
        # hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
         
-        encoder_sf_dense = Dense(512, activation='relu',
+#         encoder_sf_dense = Dense(512, activation='relu',
+#                         kernel_regularizer=regularizers.l2(0.01),
+#                         activity_regularizer=regularizers.l2(0.01),
+#                         bias_regularizer=regularizers.l2(0.01))  
+
+        encoder_sf_cnn1 = Conv1D(filters=512, kernel_size=2,strides=1, activation='relu',
                         kernel_regularizer=regularizers.l2(0.01),
                         activity_regularizer=regularizers.l2(0.01),
-                        bias_regularizer=regularizers.l2(0.01))        
-        hidden_sf = TimeDistributed(encoder_sf_dense, name="h_sf")(input_encoder_streamflow)
+                        bias_regularizer=regularizers.l2(0.01),padding='same')
+        encoder_sf_cnn2 = Conv1D(filters=256, kernel_size=3,strides=2, activation='relu',
+                    kernel_regularizer=regularizers.l2(0.01),
+                    activity_regularizer=regularizers.l2(0.01),
+                    bias_regularizer=regularizers.l2(0.01),padding='same')
+        encoder_sf_cnn2 = Conv1D(filters=128, kernel_size=5,strides=3, activation='relu',
+                    kernel_regularizer=regularizers.l2(0.01),
+                    activity_regularizer=regularizers.l2(0.01),
+                    bias_regularizer=regularizers.l2(0.01),padding='same')
+        hidden_sf = TimeDistributed(encoder_sf_cnn1, name="h_sf1")(input_encoder_streamflow)
+        hidden_sf = TimeDistributed(encoder_sf_cnn2, name="h_sf2")(hidden_sf)
+        hidden_sf = TimeDistributed(encoder_sf_cnn3, name="h_sf3")(hidden_sf)
         hidden_sf = Dropout(0.5)(hidden_sf)  
         
         hidden_observed_rainfall = concatenate([hidden_observed_rainfall,hidden_sf],axis = 2, name = "conc_h_look")
@@ -76,11 +91,11 @@ class CASTLE:
         pred_ob_sf = TimeDistributed(Dense(1, activation='relu'), name="out_ob_sf")(encoder_outputs)
 
         #decoder......
-#         decoder_rf_dense = Dense(512, activation='relu',
-#                         kernel_regularizer=regularizers.l2(0.01),
-#                         activity_regularizer=regularizers.l2(0.01),
-#                         bias_regularizer=regularizers.l2(0.01))
-        hidden_forecasted_rainfall = TimeDistributed(encoder_rf_dense, name="h_fo1")(input_forecasted)
+        decoder_rf_dense = Dense(512, activation='relu',
+                        kernel_regularizer=regularizers.l2(0.01),
+                        activity_regularizer=regularizers.l2(0.01),
+                        bias_regularizer=regularizers.l2(0.01))
+        hidden_forecasted_rainfall = TimeDistributed(decoder_rf_dense, name="h_fo1")(input_forecasted)
         
         hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
@@ -94,7 +109,11 @@ class CASTLE:
         #hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
                
-        hidden_sf2 = TimeDistributed(encoder_sf_dense, name="h_sf2")(input_decoder_streamflow)
+        #hidden_sf2 = TimeDistributed(encoder_sf_dense, name="h_sf2")(input_decoder_streamflow)
+        
+        hidden_sf2 = TimeDistributed(encoder_sf_cnn1, name="h_sf4")(input_decoder_streamflow)
+        hidden_sf2 = TimeDistributed(encoder_sf_cnn2, name="h_sf5")(hidden_sf2)
+        hidden_sf2 = TimeDistributed(encoder_sf_cnn3, name="h_sf6")(hidden_sf2)
         hidden_sf2 = Dropout(0.5)(hidden_sf2) 
         hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,hidden_sf2],axis = 2, name = 'conc_h_lead')
         hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)

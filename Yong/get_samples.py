@@ -11,7 +11,8 @@ B_CSV_PATH = str(folder)+"X_Brahmaputra.csv"
 M_CSV_PATH = str(folder)+"X_Meghna.csv"
 RF_CSV_PATH = str(folder)+"persiann_1_x_1_look20.npy"
 FP_CSV_PATH = str(folder)+"total_forecast_precipitation_mean_spread_input.npy"
-MB_CSV_PATH = "./markov_blanket_for_rainfall.csv.gz"
+RF_MB_CSV_PATH = "./markov_blanket_for_rainfall.csv.gz"
+FP_MB_CSV_PATH = "./markov_blanket_for_rainfall_g_1.csv.gz"
 LAT = np.arange(-19,45,1)
 LON = np.arange(60,188,1)
 
@@ -34,7 +35,8 @@ def get_samples(look = 10, lead = 10, sdim = 5, normalization = True):
         norm_num_data = normalizer.fit_transform(Q[cols].values)
         Q.loc[:,cols] = norm_num_data
         
-    mb_rf = pd.read_csv(MB_CSV_PATH)
+    mb_rf = pd.read_csv(RF_MB_CSV_PATH)
+    mb_fp = pd.read_csv(FP_MB_CSV_PATH)
 
     rf = np.load(RF_CSV_PATH)#(4896, 20, 64, 128)
     rf = rf.reshape(rf.shape[0], rf.shape[1],-1)
@@ -49,7 +51,7 @@ def get_samples(look = 10, lead = 10, sdim = 5, normalization = True):
     fp = np.moveaxis(fp, 3, 1)
     fp = fp[:, :, :, :, 0]#(4896, 15, 64, 128)
     fp = fp.reshape(fp.shape[0], fp.shape[1],-1)
-    fp = fp[:,:,mb_rf["idx"].values]
+    fp = fp[:,:,mb_fp["idx"].values]
     if normalization:
         for i in range(fp.shape[1]):
             normalizer = StandardScaler()
