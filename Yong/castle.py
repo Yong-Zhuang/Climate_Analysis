@@ -145,21 +145,28 @@ class CASTLE:
         # Encode the input as state vectors.
         
         init_prediction, state_h, state_c = self.encoder_model.predict([input_encoder_streamflow,input_observed])
-        prediction = init_prediction[:,-self.sf_dim:]
-        print(init_prediction.shape, prediction.shape)
-        input_decoder_streamflow = prediction
+        #input_decoder_sf = input_encoder_streamflow[:,-1:,:]
+	#print(input_decoder_sf.shape, init_prediction[:,-1:].shape)
+	#input_decoder_sf = np.append(input_decoder_sf,init_prediction[:,-1:],axis =2)
+        #input_decoder_sf = input_decoder_sf[:,:,1:]
+        input_decoder_sf = init_prediction[:,-self.sf_dim:]
+        input_decoder_sf = input_decoder_sf.reshape(input_decoder_sf.shape[0], 1,-1)
+        prediction = init_prediction[:,-1:]
+        print(init_prediction.shape, prediction.shape, input_decoder_sf.shape)
+      
         # Sampling loop for a batch of sequences
         
         for i in range(input_forecasted.shape[1]):
             output, h, c = self.decoder_model.predict(
-                [input_decoder_streamflow,input_forecasted[:,i:i+1]] + [state_h,state_c])
+                [input_decoder_sf,input_forecasted[:,i:i+1]] + [state_h,state_c])
 	    #print("output shape is "+str(output.shape))
-            input_decoder_streamflow = np.append(input_decoder_streamflow, output[:,-1:],axis = 1)
-            input_decoder_streamflow = input_decoder_streamflow[:,1:]
-	    #print (prediction.shape, input_decoder_streamflow.shape)
-            prediction = np.append(prediction,input_decoder_streamflow, axis = 1)
+            prediction = np.append(prediction,output[:,-1:],axis = 1)
+            output = output.reshape(output.shape[0],1,-1)
+            input_decoder_sf = np.append(input_decoder_sf, output,axis = 2)
+            input_decoder_sf = input_decoder_sf[:,:,1:]
+	    #print (prediction.shape, input_decoder_sf.shape)
 	
             # Update states
             states_value = [h, c]
-        print(prediction.shape)
+        #print(prediction.shape)
         return prediction
