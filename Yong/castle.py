@@ -29,23 +29,24 @@ from keras import optimizers
 
 class CASTLE:
 
-    def __init__(self, batch_size,epochs,observed_conf=(15, 689), forecasted_conf = (10,689),latent_dim = 256,batchNormalization=False, regularization=False):
+    def __init__(self, batch_size,epochs,observed_rf_conf=(15, 689), forecasted_rf_conf = (10,689),sf_dim = 5,latent_dim = 256,batchNormalization=False, regularization=False):
         self.MODEL_FOLDER = "./MODEL"
         self.batch_size=batch_size
         self.epochs=epochs
         
-        look, dim_ob = observed_conf
-        lead, dim_fo = forecasted_conf
-        input_encoder_streamflow = Input(shape=(None, 1),name="look_forward_stream_flow_input")
-        input_decoder_streamflow = Input(shape=(None, 1),name="leadtime_stream_flow_input")
+        look, dim_ob = observed_rf_conf
+        lead, dim_fo = forecasted_rf_conf
+        input_encoder_streamflow = Input(shape=(None, sf_dim),name="look_forward_stream_flow_input")
+        input_decoder_streamflow = Input(shape=(None, sf_dim),name="leadtime_stream_flow_input")
         input_observed = Input(shape=(None,dim_ob),name="observed_rainfall_input")
         input_forecasted = Input(shape=(None,dim_fo),name="forecasted_rainfall_input")
         
-        encoder_input_dense = Dense(512, activation='relu',
+        #encoder......
+        encoder_rf_dense = Dense(512, activation='relu',
                         kernel_regularizer=regularizers.l2(0.01),
                         activity_regularizer=regularizers.l2(0.01),
                         bias_regularizer=regularizers.l2(0.01))
-        hidden_observed_rainfall = TimeDistributed(encoder_input_dense, name="h_ob1")(input_observed)
+        hidden_observed_rainfall = TimeDistributed(encoder_rf_dense, name="h_ob1")(input_observed)
         
         hidden_observed_rainfall = Dropout(0.5)(hidden_observed_rainfall)        
        # hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
@@ -59,19 +60,26 @@ class CASTLE:
        # hidden_observed_rainfall = Dropout(0.5)(hidden_observed_rainfall)        
        # hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
         
+        encoder_sf_dense = Dense(512, activation='relu',
+                        kernel_regularizer=regularizers.l2(0.01),
+                        activity_regularizer=regularizers.l2(0.01),
+                        bias_regularizer=regularizers.l2(0.01))        
+        hidden_sf = TimeDistributed(encoder_sf_dense, name="h_sf")(input_encoder_streamflow)
+        hidden_sf = Dropout(0.5)(hidden_sf)  
         
-        hidden_observed_rainfall = concatenate([hidden_observed_rainfall,input_encoder_streamflow],axis = 2, name = "conc_h_look")
+        hidden_observed_rainfall = concatenate([hidden_observed_rainfall,hidden_sf],axis = 2, name = "conc_h_look")
         hidden_observed_rainfall = BatchNormalization()(hidden_observed_rainfall)
         encoder = LSTM(latent_dim, return_state=True, return_sequences=True, dropout=0, recurrent_dropout=0, name ='lstm_look')
         encoder_outputs, state_h, state_c = encoder(hidden_observed_rainfall)
         encoder_states = [state_h, state_c]
         pred_ob_sf = TimeDistributed(Dense(1, activation='relu'), name="out_ob_sf")(encoder_outputs)
 
-        decoder_input_dense = Dense(512, activation='relu',
-                        kernel_regularizer=regularizers.l2(0.01),
-                        activity_regularizer=regularizers.l2(0.01),
-                        bias_regularizer=regularizers.l2(0.01))
-        hidden_forecasted_rainfall = TimeDistributed(decoder_input_dense, name="h_fo1")(input_forecasted)
+        #decoder......
+#         decoder_rf_dense = Dense(512, activation='relu',
+#                         kernel_regularizer=regularizers.l2(0.01),
+#                         activity_regularizer=regularizers.l2(0.01),
+#                         bias_regularizer=regularizers.l2(0.01))
+        hidden_forecasted_rainfall = TimeDistributed(encoder_rf_dense, name="h_fo1")(input_forecasted)
         
         hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
@@ -84,17 +92,19 @@ class CASTLE:
         
         #hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
-        
-        hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,input_decoder_streamflow],axis = 2, name = 'conc_h_lead')
+               
+        hidden_sf2 = TimeDistributed(encoder_sf_dense, name="h_sf")(input_decoder_streamflow)
+        hidden_sf2 = Dropout(0.5)(hidden_sf2) 
+        hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,hidden_sf2],axis = 2, name = 'conc_h_lead')
         hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
         #decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True, dropout=0, recurrent_dropout=0, name ='lstm_lead')
         decoder_lstm = encoder
-	decoder_outputs, _, _ = decoder_lstm(hidden_forecasted_rainfall,initial_state=encoder_states)
+        decoder_outputs, _, _ = decoder_lstm(hidden_forecasted_rainfall,initial_state=encoder_states)
         decoder_dense = TimeDistributed(Dense(1, activation='relu'), name="out_fo_sf")
         pred_fo_sf = decoder_dense(decoder_outputs)
        
         self.model = Model([input_encoder_streamflow, input_decoder_streamflow, input_observed,input_forecasted], [pred_ob_sf,pred_fo_sf])
-	adam = optimizers.Adam(lr=0.1)
+        adam = optimizers.Adam(lr=0.1)
         self.model.compile(loss="mse", optimizer=adam, metrics=["mae"])
         print ("pred_ob_sf.shape is "+str(pred_ob_sf.shape))
         self.encoder_model = Model([input_encoder_streamflow, input_observed], [pred_ob_sf]+encoder_states)
