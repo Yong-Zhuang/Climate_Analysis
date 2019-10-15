@@ -51,7 +51,7 @@ def get_samples(look = 10, lead = 10, sdim = 5, normalization = True):
     fp = np.moveaxis(fp, 3, 1)
     fp = fp[:, :, :, :, 0]#(4896, 15, 64, 128)
     fp = fp.reshape(fp.shape[0], fp.shape[1],-1)
-    fp = fp[:,:,mb_fp["idx"].values]
+    fp = fp[:,:,mb_rf["idx"].values]
     if normalization:
         for i in range(fp.shape[1]):
             normalizer = StandardScaler()
@@ -71,6 +71,8 @@ def get_samples(look = 10, lead = 10, sdim = 5, normalization = True):
             X[:,i,j] = Q.loc[:,col]
     #X_Q = X_Q.values.reshape(X_Q.shape[0],X_Q.shape[1],1)
     target_Q = target_Q.values.reshape(target_Q.shape[0],target_Q.shape[1],1)
+    print(X.shape)
+    X = X.reshape(X.shape[0],X.shape[1],X.shape[2],1)
     input_encoder_streamflow, input_decoder_streamflow = X[:,:look,:],X[:,look:,:]
     input_observed,input_forecasted = X_rf[:,:look,:],X_rf[:,look:,:]
     y_ob_sf,y_fo_sf = target_Q[:,:look],target_Q[:,look:]

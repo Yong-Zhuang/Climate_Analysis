@@ -22,10 +22,12 @@ from keras.layers import (
     TimeDistributed,
     LSTM,
     Dropout,
+    Conv1D,
 )
 from keras.callbacks import EarlyStopping,  Callback, ReduceLROnPlateau
 from keras.models import Model
 from keras import optimizers
+import keras.backend as K
 
 class CASTLE:
 
@@ -37,8 +39,8 @@ class CASTLE:
         
         look, dim_ob = observed_rf_conf
         lead, dim_fo = forecasted_rf_conf
-        input_encoder_streamflow = Input(shape=(None, sf_dim),name="look_forward_stream_flow_input")
-        input_decoder_streamflow = Input(shape=(None, sf_dim),name="leadtime_stream_flow_input")
+        input_encoder_streamflow = Input(shape=(None, sf_dim,1),name="look_forward_stream_flow_input")
+        input_decoder_streamflow = Input(shape=(None, sf_dim,1),name="leadtime_stream_flow_input")
         input_observed = Input(shape=(None,dim_ob),name="observed_rainfall_input")
         input_forecasted = Input(shape=(None,dim_fo),name="forecasted_rainfall_input")
         
@@ -65,22 +67,31 @@ class CASTLE:
 #                         kernel_regularizer=regularizers.l2(0.01),
 #                         activity_regularizer=regularizers.l2(0.01),
 #                         bias_regularizer=regularizers.l2(0.01))  
-
         encoder_sf_cnn1 = Conv1D(filters=512, kernel_size=2,strides=1, activation='relu',
                         kernel_regularizer=regularizers.l2(0.01),
                         activity_regularizer=regularizers.l2(0.01),
                         bias_regularizer=regularizers.l2(0.01),padding='same')
-        encoder_sf_cnn2 = Conv1D(filters=256, kernel_size=3,strides=2, activation='relu',
+        encoder_sf_cnn2 = Conv1D(filters=256, kernel_size=3,strides=1, activation='relu',
                     kernel_regularizer=regularizers.l2(0.01),
                     activity_regularizer=regularizers.l2(0.01),
                     bias_regularizer=regularizers.l2(0.01),padding='same')
-        encoder_sf_cnn2 = Conv1D(filters=128, kernel_size=5,strides=3, activation='relu',
+        encoder_sf_cnn3 = Conv1D(filters=256, kernel_size=5,strides=2, activation='relu',
                     kernel_regularizer=regularizers.l2(0.01),
                     activity_regularizer=regularizers.l2(0.01),
                     bias_regularizer=regularizers.l2(0.01),padding='same')
+        encoder_sf_cnn4 = Conv1D(filters=256, kernel_size=7,strides=3, activation='relu',
+                    kernel_regularizer=regularizers.l2(0.01),
+                    activity_regularizer=regularizers.l2(0.01),
+                    bias_regularizer=regularizers.l2(0.01),padding='same')
+	#input_encoder_sf = K.expand_dims(input_encoder_streamflow,axis=-1)
+	#input_encoder_sf = Reshape((None, sf_dim,1))(input_encoder_streamflow)
+        #print(input_encoder_streamflow.shape)
+
         hidden_sf = TimeDistributed(encoder_sf_cnn1, name="h_sf1")(input_encoder_streamflow)
         hidden_sf = TimeDistributed(encoder_sf_cnn2, name="h_sf2")(hidden_sf)
         hidden_sf = TimeDistributed(encoder_sf_cnn3, name="h_sf3")(hidden_sf)
+	hidden_sf = TimeDistributed(encoder_sf_cnn4, name="h_sf0")(hidden_sf)
+        hidden_sf = TimeDistributed(Flatten())(hidden_sf)
         hidden_sf = Dropout(0.5)(hidden_sf)  
         
         hidden_observed_rainfall = concatenate([hidden_observed_rainfall,hidden_sf],axis = 2, name = "conc_h_look")
@@ -91,11 +102,11 @@ class CASTLE:
         pred_ob_sf = TimeDistributed(Dense(1, activation='relu'), name="out_ob_sf")(encoder_outputs)
 
         #decoder......
-        decoder_rf_dense = Dense(512, activation='relu',
-                        kernel_regularizer=regularizers.l2(0.01),
-                        activity_regularizer=regularizers.l2(0.01),
-                        bias_regularizer=regularizers.l2(0.01))
-        hidden_forecasted_rainfall = TimeDistributed(decoder_rf_dense, name="h_fo1")(input_forecasted)
+        #decoder_rf_dense = Dense(512, activation='relu',
+        #                kernel_regularizer=regularizers.l2(0.01),
+        #                activity_regularizer=regularizers.l2(0.01),
+        #                bias_regularizer=regularizers.l2(0.01))
+        hidden_forecasted_rainfall = TimeDistributed(encoder_rf_dense, name="h_fo1")(input_forecasted)
         
         hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
@@ -110,10 +121,13 @@ class CASTLE:
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
                
         #hidden_sf2 = TimeDistributed(encoder_sf_dense, name="h_sf2")(input_decoder_streamflow)
-        
+        #input_decoder_sf = K.expand_dims(input_decoder_streamflow,axis=-1)
+	#input_decoder_sf = Reshape((None, sf_dim,1))(input_decoder_streamflow)
         hidden_sf2 = TimeDistributed(encoder_sf_cnn1, name="h_sf4")(input_decoder_streamflow)
         hidden_sf2 = TimeDistributed(encoder_sf_cnn2, name="h_sf5")(hidden_sf2)
         hidden_sf2 = TimeDistributed(encoder_sf_cnn3, name="h_sf6")(hidden_sf2)
+ 	hidden_sf2 = TimeDistributed(encoder_sf_cnn4, name="h_sf7")(hidden_sf2)
+	hidden_sf2 = TimeDistributed(Flatten())(hidden_sf2)
         hidden_sf2 = Dropout(0.5)(hidden_sf2) 
         hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,hidden_sf2],axis = 2, name = 'conc_h_lead')
         hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
@@ -141,15 +155,15 @@ class CASTLE:
             [input_decoder_streamflow, input_forecasted] + decoder_states_inputs,
             [decoder_outputs] + decoder_states)        
 
-    def fit(self,X,y):
+    def fit(self,X,y,X_test,y_test):
         early_stopping = EarlyStopping(monitor='val_loss', patience=20, mode='auto')
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1, min_delta=1e-4) 
         callbacks = [early_stopping,reduce_lr]
         history = self.model.fit(X, y,
                   batch_size=self.batch_size,
                   epochs=self.epochs,
-                    validation_split = 0.2,
-                    #validation_data = (X_test, y_test),
+                    #validation_split = 0.2,
+                    validation_data = (X_test, y_test),
                     callbacks=callbacks,
                     verbose=2)
         self.model.save(os.path.join(self.MODEL_FOLDER, "castle.h5"))
@@ -169,7 +183,7 @@ class CASTLE:
 	#input_decoder_sf = np.append(input_decoder_sf,init_prediction[:,-1:],axis =2)
         #input_decoder_sf = input_decoder_sf[:,:,1:]
         input_decoder_sf = init_prediction[:,-self.sf_dim:]
-        input_decoder_sf = input_decoder_sf.reshape(input_decoder_sf.shape[0], 1,-1)
+        input_decoder_sf = input_decoder_sf.reshape(input_decoder_sf.shape[0], 1,-1,1)
         prediction = init_prediction[:,-1:]
         print(init_prediction.shape, prediction.shape, input_decoder_sf.shape)
       
@@ -180,7 +194,7 @@ class CASTLE:
                 [input_decoder_sf,input_forecasted[:,i:i+1]] + [state_h,state_c])
 	    #print("output shape is "+str(output.shape))
             prediction = np.append(prediction,output[:,-1:],axis = 1)
-            output = output.reshape(output.shape[0],1,-1)
+            output = output.reshape(output.shape[0],1,-1,1)
             input_decoder_sf = np.append(input_decoder_sf, output,axis = 2)
             input_decoder_sf = input_decoder_sf[:,:,1:]
 	    #print (prediction.shape, input_decoder_sf.shape)
