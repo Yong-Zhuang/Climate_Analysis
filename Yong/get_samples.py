@@ -15,27 +15,24 @@ MB_CSV_PATH = "./markov_blanket_for_rainfall.csv.gz"
 LAT = np.arange(-19,45,1)
 LON = np.arange(60,188,1)
 
-def get_samples(look = 10, lead = 10, normalization = True):
+def get_samples(look = 10, lead = 10, sdim = 5, normalization = True):
     Qx_Ganges = pd.read_csv(G_CSV_PATH)
-    Qx_Ganges.head()
 
     Qy_Ganges = pd.read_csv(GY_CSV_PATH)
-    Qy_Ganges.head()
 
     Q = pd.concat([Qx_Ganges, Qy_Ganges], axis=1)
-    Q.head()
     idx = []
     for i in np.arange(1 - look, lead+1, 1):
         idx.append("Q_" + str(i))
    
-    target_Q = Q.loc[:,idx[1:]]#Q_-8...Q_10
+    cols = [col for col in Q.columns if 'Q_' in col]
+    target_Q = Q.loc[:,idx[1:]].copy()#Q_-8...Q_10
 
-    X_Q = Q.loc[:,idx[:-1]] #Q_-9...Q_9
     if normalization:
         normalizer = StandardScaler()
 
-        norm_num_data = normalizer.fit_transform(X_Q.values.copy())
-        X_Q.loc[:,idx[:-1]] = norm_num_data
+        norm_num_data = normalizer.fit_transform(Q[cols].values)
+        Q.loc[:,cols] = norm_num_data
         
     mb_rf = pd.read_csv(MB_CSV_PATH)
 
@@ -59,9 +56,20 @@ def get_samples(look = 10, lead = 10, normalization = True):
             norm_num_data = normalizer.fit_transform(fp[:,i,:])
             fp[:,i,:] = norm_num_data     
     X_rf = np.concatenate((rf[:,-look:,:], fp[:,:lead-1,:]), axis=1)#(4896, 19, 689)
-    X_Q = X_Q.values.reshape(X_Q.shape[0],X_Q.shape[1],1)
+    X = np.zeros((X_Q.shape[0],X_Q.shape[1],sdim))
+    
+    
+    #X_Q = Q.loc[:,idx[:-1]] 
+    for i,v in enumerate(idx[:-1]):#Q_-9...Q_9
+        vs = v.split("_")
+        today = int(vs[1])
+        for j in range(sdim): 
+            day = today - j
+            col = "Q_"+str(day)
+            X[:,i,j] = Q.loc[:,col]
+    #X_Q = X_Q.values.reshape(X_Q.shape[0],X_Q.shape[1],1)
     target_Q = target_Q.values.reshape(target_Q.shape[0],target_Q.shape[1],1)
-    input_encoder_streamflow, input_decoder_streamflow = X_Q[:,:look],X_Q[:,look:]
+    input_encoder_streamflow, input_decoder_streamflow = X[:,:look,:],X[:,look:,:]
     input_observed,input_forecasted = X_rf[:,:look,:],X_rf[:,look:,:]
     y_ob_sf,y_fo_sf = target_Q[:,:look],target_Q[:,look:]
     

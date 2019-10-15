@@ -48,10 +48,12 @@ if __name__== "__main__":
     parser = argparse.ArgumentParser(description='castle')    
     parser.add_argument('-gpu', metavar='int', required=True, help='gpu index, using which GPU')
     parser.add_argument('-look', metavar='int', required=True, help='# days look forward')
-    parser.add_argument('-lead', metavar='int', required=True, help='# days lead time')    
+    parser.add_argument('-lead', metavar='int', required=True, help='# days lead time')  
+    parser.add_argument('-sdim', metavar='int', required=True, help='# dependent days of streamflow')   
     args = parser.parse_args() 
     look = int(args.look)
     lead = int(args.lead)
+    sdim = int(args.sdim)
     #set gpu for running experiment
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
@@ -59,14 +61,14 @@ if __name__== "__main__":
     
     print ('start constructing samples.')    
 
-    esf, dsf, ob,fo, y_ob_sf,y_fo_sf = gs.get_samples(look = look, lead = lead, normalization = True)    
+    esf, dsf, ob,fo, y_ob_sf,y_fo_sf = gs.get_samples(look = look, lead = lead,sdim = sdim, normalization = True)    
     
     train_esf, train_dsf,train_ob,train_fo,train_y_ob_sf,train_y_fo_sf = esf[:train_test], dsf[:train_test], ob[:train_test],fo[:train_test], y_ob_sf[:train_test],y_fo_sf[:train_test]
     
     test_esf, test_dsf,test_ob,test_fo,test_y_ob_sf,test_y_fo_sf = esf[train_test:], dsf[train_test:], ob[train_test:],fo[train_test:], y_ob_sf[train_test:],y_fo_sf[train_test:]
     
     print("training model...")
-    clf = castle.CASTLE(batch_size, nb_epoch,observed_conf=(ob.shape[1], ob.shape[-1]), forecasted_conf = (fo.shape[1],fo.shape[-1]),latent_dim = 256,batchNormalization=False, regularization=False)
+    clf = castle.CASTLE(batch_size, nb_epoch,observed_conf=(ob.shape[1], ob.shape[-1]), forecasted_conf = (fo.shape[1],fo.shape[-1]),sf_dim = esf.shape[-1],latent_dim = 256,batchNormalization=False, regularization=False)
     print (train_esf.shape, train_dsf.shape,train_ob.shape,train_fo.shape,train_y_ob_sf.shape,train_y_fo_sf.shape)
     clf.fit([train_esf, train_dsf,train_ob,train_fo], [train_y_ob_sf,train_y_fo_sf])
     
