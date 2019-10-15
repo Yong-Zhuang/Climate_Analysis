@@ -73,9 +73,7 @@ if __name__ == "__main__":
         observed_rf_conf=(ob.shape[1], ob.shape[-1]),
         forecasted_rf_conf=(fo.shape[1], fo.shape[-1]),
         sf_dim=esf.shape[2],
-        latent_dim=256,
-        batchNormalization=False,
-        regularization=False,
+        latent_dim=256
     )
     print(train_esf.shape, train_dsf.shape, train_ob.shape, train_fo.shape, train_y_ob_sf.shape, train_y_fo_sf.shape)
     clf.fit(

@@ -183,8 +183,8 @@ class CASTLE:
             y,
             batch_size=self.batch_size,
             epochs=self.epochs,
-            # validation_split = 0.2,
-            validation_data=(x_test, y_test),
+            validation_split = 0.2,
+            #validation_data=(x_test, y_test),
             callbacks=callbacks,
             verbose=2,
         )
@@ -202,12 +202,14 @@ class CASTLE:
         # Encode the input as state vectors.
 
         init_prediction, state_h, state_c = self.encoder_model.predict([input_encoder_streamflow, input_observed])
-        # input_decoder_sf = input_encoder_streamflow[:,-1:,:]
+        input_decoder_sf = input_encoder_streamflow[:,-1:,:,:]
         # print(input_decoder_sf.shape, init_prediction[:,-1:].shape)
-        # input_decoder_sf = np.append(input_decoder_sf,init_prediction[:,-1:],axis =2)
-        # input_decoder_sf = input_decoder_sf[:,:,1:]
-        input_decoder_sf = init_prediction[:, -self.sf_dim :]
-        input_decoder_sf = input_decoder_sf.reshape(input_decoder_sf.shape[0], 1, -1, 1)
+        input_decoder_sf = np.append(input_decoder_sf,init_prediction[:,-1:].reshape(init_prediction.shape[0],1,-1,1),axis =2)
+	print (input_decoder_sf.shape)
+        input_decoder_sf = input_decoder_sf[:,:,1:]
+
+        #input_decoder_sf = init_prediction[:, -self.sf_dim :]
+        #input_decoder_sf = input_decoder_sf.reshape(input_decoder_sf.shape[0], 1, -1, 1)
         prediction = init_prediction[:, -1:]
         print(init_prediction.shape, prediction.shape, input_decoder_sf.shape)
         states_value = [state_h, state_c]
