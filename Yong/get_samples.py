@@ -56,7 +56,7 @@ def get_samples(look = 10, lead = 10, sdim = 5, normalization = True):
             norm_num_data = normalizer.fit_transform(fp[:,i,:])
             fp[:,i,:] = norm_num_data     
     X_rf = np.concatenate((rf[:,-look:,:], fp[:,:lead-1,:]), axis=1)#(4896, 19, 689)
-    X = np.zeros((X_Q.shape[0],X_Q.shape[1],sdim))
+    X = np.zeros((Q.shape[0],len(idx[:-1]),sdim))
     
     
     #X_Q = Q.loc[:,idx[:-1]] 

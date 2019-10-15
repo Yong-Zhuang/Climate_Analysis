@@ -93,7 +93,7 @@ class CASTLE:
         #hidden_forecasted_rainfall = Dropout(0.5)(hidden_forecasted_rainfall)
         #hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)
                
-        hidden_sf2 = TimeDistributed(encoder_sf_dense, name="h_sf")(input_decoder_streamflow)
+        hidden_sf2 = TimeDistributed(encoder_sf_dense, name="h_sf2")(input_decoder_streamflow)
         hidden_sf2 = Dropout(0.5)(hidden_sf2) 
         hidden_forecasted_rainfall = concatenate([hidden_forecasted_rainfall,hidden_sf2],axis = 2, name = 'conc_h_lead')
         hidden_forecasted_rainfall = BatchNormalization()(hidden_forecasted_rainfall)

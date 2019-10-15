@@ -68,7 +68,7 @@ if __name__== "__main__":
     test_esf, test_dsf,test_ob,test_fo,test_y_ob_sf,test_y_fo_sf = esf[train_test:], dsf[train_test:], ob[train_test:],fo[train_test:], y_ob_sf[train_test:],y_fo_sf[train_test:]
     
     print("training model...")
-    clf = castle.CASTLE(batch_size, nb_epoch,observed_conf=(ob.shape[1], ob.shape[-1]), forecasted_conf = (fo.shape[1],fo.shape[-1]),sf_dim = esf.shape[-1],latent_dim = 256,batchNormalization=False, regularization=False)
+    clf = castle.CASTLE(batch_size, nb_epoch,observed_rf_conf=(ob.shape[1], ob.shape[-1]), forecasted_rf_conf = (fo.shape[1],fo.shape[-1]),sf_dim = esf.shape[-1],latent_dim = 256,batchNormalization=False, regularization=False)
     print (train_esf.shape, train_dsf.shape,train_ob.shape,train_fo.shape,train_y_ob_sf.shape,train_y_fo_sf.shape)
     clf.fit([train_esf, train_dsf,train_ob,train_fo], [train_y_ob_sf,train_y_fo_sf])
     
