@@ -153,9 +153,9 @@ class CASTLE:
         decoder_outputs, decoder_states = decoder_gru(decoder_conc, initial_state=encoder_states)
 
         # Attention layer
-        attn_layer = AttentionLayer(name="attention_layer")
+        attn_layer = AttentionLayer(name="attention_layer",look)
         print("encoder_out, decoder_out are: ",encoder_outputs, decoder_outputs)
-        attn_outputs, attn_states = attn_layer([encoder_outputs, decoder_outputs,look])
+        attn_outputs, attn_states = attn_layer([encoder_outputs, decoder_outputs])
 
         # Concat attention input and decoder GRU output
         decoder_concat_input = concatenate(axis=-1, name="concat_layer")([decoder_outputs, attn_outputs])
