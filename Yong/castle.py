@@ -27,10 +27,10 @@ class CASTLE:
         lead, dim_fo = forecasted_rf_conf
         
         print ("look, lead are:", look, lead)
-        encoder_inputs_sf = Input(shape=(look, sf_dim, 1), name="look_forward_stream_flow_input")
-        decoder_inputs_sf = Input(shape=(lead, sf_dim, 1), name="leadtime_stream_flow_input")
-        encoder_inputs_observed_rf = Input(shape=(look, dim_ob), name="observed_rainfall_input")
-        decoder_inputs_forecasted_rf = Input(shape=(lead, dim_fo), name="forecasted_rainfall_input")
+        encoder_inputs_sf = Input(shape=(None, sf_dim, 1), name="look_forward_stream_flow_input")
+        decoder_inputs_sf = Input(shape=(None, sf_dim, 1), name="leadtime_stream_flow_input")
+        encoder_inputs_observed_rf = Input(shape=(None, dim_ob), name="observed_rainfall_input")
+        decoder_inputs_forecasted_rf = Input(shape=(None, dim_fo), name="forecasted_rainfall_input")
 
         # encoder......
         encoder_rf_dense = Dense(
@@ -153,12 +153,13 @@ class CASTLE:
         decoder_outputs, decoder_states = decoder_gru(decoder_conc, initial_state=encoder_states)
 
         # Attention layer
-        attn_layer = AttentionLayer(name="attention_layer",look)
+        attn_layer = AttentionLayer(name="attention_layer",look=look)
         print("encoder_out, decoder_out are: ",encoder_outputs, decoder_outputs)
         attn_outputs, attn_states = attn_layer([encoder_outputs, decoder_outputs])
 
         # Concat attention input and decoder GRU output
-        decoder_concat_input = concatenate(axis=-1, name="concat_layer")([decoder_outputs, attn_outputs])
+        print("decoder_out, attn_out are: ", type(decoder_outputs), type(attn_outputs))
+        decoder_concat_input = concatenate([decoder_outputs, attn_outputs], axis=-1, name="concat_layer")
 
         # Dense layer
         decoder_dense_time = TimeDistributed(Dense(1, activation="relu"), name="decoder_pred")
@@ -175,12 +176,12 @@ class CASTLE:
             [encoder_pred, decoder_pred],
         )
         adam = optimizers.Adam(lr=0.1)
-        self.model.compile(loss="mse", optimizer=adam, metrics=["mae"])
+        self.full_model.compile(loss="mse", optimizer=adam, metrics=["mae"])
         print("decoder_pred.shape is " + str(decoder_pred.shape))
 
         """ Inference model """
         self.encoder_model = Model(
-            [encoder_inputs_sf, encoder_inputs_observed_rf], [encoder_pred] + encoder_states
+            [encoder_inputs_sf, encoder_inputs_observed_rf], [encoder_pred, encoder_outputs, encoder_states]
         )
         """ Decoder (Inference) model """
         encoder_inf_out = Input(shape=(None, latent_dim), name="encoder_inf_out")
@@ -188,7 +189,7 @@ class CASTLE:
 
         decoder_inf_out, decoder_inf_state = decoder_gru(decoder_conc, initial_state=decoder_init_state)
         attn_inf_out, attn_inf_states = attn_layer([encoder_inf_out, decoder_inf_out])
-        decoder_inf_concat = concatenate(axis=-1, name="decoder_inf_concat")([decoder_inf_out, attn_inf_out])
+        decoder_inf_concat = concatenate([decoder_inf_out, attn_inf_out], axis=-1, name="decoder_inf_concat")
         decoder_inf_pred = decoder_dense_time(decoder_inf_concat)
         self.decoder_model = Model(
             inputs=[decoder_inputs_sf, decoder_inputs_forecasted_rf, encoder_inf_out, decoder_init_state],
@@ -206,7 +207,7 @@ class CASTLE:
             save_weights_only=False,
         )
         callbacks = [model_checkpoint, early_stopping, reduce_lr]
-        history = self.model.fit(
+        history = self.full_model.fit(
             x,
             y,
             batch_size=self.batch_size,
@@ -228,7 +229,7 @@ class CASTLE:
     
     def predict(self, encoder_inputs_sf, encoder_inputs_observed_rf, decoder_inputs_forecasted_rf):
         # Encode the input as state vectors.
-        encoder_pred, encoder_state = self.encoder_model.predict([encoder_inputs_sf, encoder_inputs_observed_rf])
+        encoder_pred, encoder_out, encoder_state = self.encoder_model.predict([encoder_inputs_sf, encoder_inputs_observed_rf])
         decoder_inputs_sf = encoder_inputs_sf[:, -1:, :, :]
         # print(input_decoder_sf.shape, init_prediction[:,-1:].shape)
         decoder_inputs_sf = np.append(
@@ -246,7 +247,7 @@ class CASTLE:
         for i in range(decoder_inputs_forecasted_rf.shape[1]):
             # input_decoder_streamflow, input_decoder_forecasted_rf, encoder_inf_states, decoder_init_state
             decoder_pred, attn_states, decoder_state = self.decoder_model.predict(
-                [decoder_inputs_sf, decoder_inputs_forecasted_rf[:, i : i + 1]] + [encoder_pred, state_value]
+                [decoder_inputs_sf, decoder_inputs_forecasted_rf[:, i : i + 1]] + [encoder_out, state_value]
             )
             # print("output shape is "+str(output.shape))
             prediction = np.append(prediction, decoder_pred[:, -1:], axis=1)

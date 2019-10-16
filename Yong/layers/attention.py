@@ -1,7 +1,7 @@
 import tensorflow as tf
 import os
-from tensorflow.python.keras.layers import Layer
-from tensorflow.python.keras import backend as K
+from keras.layers import Layer
+from keras import backend as K
 
 
 class AttentionLayer(Layer):
@@ -15,6 +15,7 @@ class AttentionLayer(Layer):
         self.look = look
     def build(self, input_shape):
         assert isinstance(input_shape, list)
+	print("here 55555555555555555555555555")
         # Create a trainable weight variable for this layer.
 
         self.W_a = self.add_weight(name='W_a',
@@ -38,6 +39,7 @@ class AttentionLayer(Layer):
         """
         assert type(inputs) == list
         encoder_out_seq, decoder_out_seq = inputs
+	print("types are: ",type(encoder_out_seq),type(decoder_out_seq))
         encoder_out_seq_shape = tf.shape(encoder_out_seq)
         decoder_out_seq_shape = tf.shape(decoder_out_seq)
         if verbose:#encoder_out_seq_shape = tf.shape(encoder_out_seq)
@@ -102,23 +104,26 @@ class AttentionLayer(Layer):
 
         fake_state_c = create_inital_state(encoder_out_seq, encoder_out_seq_shape[-1])
         fake_state_e = create_inital_state(encoder_out_seq, self.look)  # <= (batch_size, enc_seq_len, latent_dim
-
+        print("here 11111111111111111111111111111")
         """ Computing energy outputs """
         # e_outputs => (batch_size, de_seq_len, en_seq_len)
         last_out, e_outputs, _ = K.rnn(
             energy_step, decoder_out_seq, [fake_state_e],
         )
-
+        print("here 22222222222222222222222222222")
         """ Computing context vectors """
         last_out, c_outputs, _ = K.rnn(
             context_step, e_outputs, [fake_state_c],
         )
-
-        return c_outputs, e_outputs
+        print("here 33333333333333333333333333333")
+        print(type(c_outputs), type(e_outputs))
+        return [c_outputs, e_outputs]
 
     def compute_output_shape(self, input_shape):
         """ Outputs produced by the layer """
+	print("here 44444444444444444444444444444")
+	print(input_shape)
         return [
-            tf.TensorShape((input_shape[1][0], input_shape[1][1], input_shape[1][2])),
-            tf.TensorShape((input_shape[1][0], input_shape[1][1], input_shape[0][1]))
+            (input_shape[1][0], input_shape[1][1], input_shape[1][2]),
+            (input_shape[1][0], input_shape[1][1], input_shape[0][1])
         ]

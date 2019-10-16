@@ -9,7 +9,7 @@ from tensorflow import set_random_seed
 
 set_random_seed(2)
 np.random.seed(3)  # for reproducibility
-nb_epoch = 1000  # number of epoch at training stage
+nb_epoch = 2  # number of epoch at training stage
 batch_size = 100  # batch size
 train_test = 3825
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     prediction, attention_weights = clf.predict(test_esf, test_ob, test_fo)
     atten_df = pd.DataFrame(attention_weights)
-    atten_df.to_csv("attention_weights.csv.gz.", index=None, header=True, compression="gzip")
+    atten_df.to_csv("attention_weights.csv.gz", index=None, header=True, compression="gzip")
     results = {}
     for lead in ["5 days", "7 days", "10 days", "15 days"]:
         results[lead] = {}
@@ -100,4 +100,4 @@ if __name__ == "__main__":
     results = get_metrics(results, "15 days", test_y_fo_sf[:, 14], prediction[:, 14])
     print(results)
     df_results = pd.DataFrame(results)
-    df_results.to_csv("castle_result.csv.gz.", index=None, header=True, compression="gzip")
+    df_results.to_csv("castle_result.csv.gz", index=None, header=True, compression="gzip")
