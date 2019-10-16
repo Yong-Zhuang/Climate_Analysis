@@ -37,7 +37,7 @@ class AttentionLayer(Layer):
         inputs: [encoder_output_sequence, decoder_output_sequence]
         """
         assert type(inputs) == list
-        encoder_out_seq, decoder_out_seq = inputs
+        encoder_out_seq, decoder_out_seq, look = inputs
         encoder_out_seq_shape = tf.shape(encoder_out_seq)
         decoder_out_seq_shape = tf.shape(decoder_out_seq)
         if verbose:#encoder_out_seq_shape = tf.shape(encoder_out_seq)
@@ -51,7 +51,7 @@ class AttentionLayer(Layer):
             assert isinstance(states, list) or isinstance(states, tuple), assert_msg
 
             """ Some parameters required for shaping tensors"""
-            en_seq_len, en_hidden = encoder_out_seq_shape[1], encoder_out_seq_shape[2]
+            en_seq_len, en_hidden = look, encoder_out_seq_shape[2]
             de_hidden = inputs.shape[-1]
 
             """ Computing S.Wa where S=[s0, s1, ..., si]"""
@@ -101,7 +101,7 @@ class AttentionLayer(Layer):
             return fake_state
 
         fake_state_c = create_inital_state(encoder_out_seq, encoder_out_seq_shape[-1])
-        fake_state_e = create_inital_state(encoder_out_seq, encoder_out_seq_shape[1])  # <= (batch_size, enc_seq_len, latent_dim
+        fake_state_e = create_inital_state(encoder_out_seq, look)  # <= (batch_size, enc_seq_len, latent_dim
 
         """ Computing energy outputs """
         # e_outputs => (batch_size, de_seq_len, en_seq_len)
@@ -165,8 +165,8 @@ class AttentionLayer(Layer):
         """
         assert type(inputs) == list
         encoder_out_seq, decoder_out_seq = inputs
-	encoder_out_seq_shape = tf.shape(encoder_out_seq)
-	decoder_out_seq_shape = tf.shape(decoder_out_seq)
+        encoder_out_seq_shape = tf.shape(encoder_out_seq)
+        decoder_out_seq_shape = tf.shape(decoder_out_seq)
         if verbose:
             print("encoder_out_seq>", encoder_out_seq.shape)
             print("decoder_out_seq>", decoder_out_seq.shape)
@@ -178,7 +178,7 @@ class AttentionLayer(Layer):
             assert isinstance(states, list) or isinstance(states, tuple), assert_msg
 
             """ Some parameters required for shaping tensors"""
-            en_seq_len, en_hidden = encoder_out_seq_shape[1], encoder_out_seq_shape[2]
+            en_seq_len, en_hidden = look, encoder_out_seq_shape[2]
             de_hidden = inputs.shape[-1]
 
             """ Computing S.Wa where S=[s0, s1, ..., si]"""
@@ -220,7 +220,6 @@ class AttentionLayer(Layer):
             return c_i, [c_i]
 
         def create_inital_state(inputs, hidden_size):
-	    print("The hidden size is: "+str(hidden_size))
             # We are not using initial states, but need to pass something to K.rnn funciton
             fake_state = K.zeros_like(inputs)  # <= (batch_size, enc_seq_len, latent_dim
             fake_state = K.sum(fake_state, axis=[1, 2])  # <= (batch_size)
@@ -230,7 +229,7 @@ class AttentionLayer(Layer):
 
         fake_state_c = create_inital_state(encoder_out_seq, encoder_out_seq.shape[-1])
         fake_state_e = create_inital_state(
-            encoder_out_seq, tf.shape(encoder_out_seq)[1]
+            encoder_out_seq, look
         )  # <= (batch_size, enc_seq_len, latent_dim
 
         """ Computing energy outputs """

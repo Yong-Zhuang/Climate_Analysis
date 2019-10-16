@@ -26,7 +26,7 @@ class CASTLE:
         look, dim_ob = observed_rf_conf
         lead, dim_fo = forecasted_rf_conf
         
-        
+        print ("look, lead are:", look, lead)
         encoder_inputs_sf = Input(shape=(look, sf_dim, 1), name="look_forward_stream_flow_input")
         decoder_inputs_sf = Input(shape=(lead, sf_dim, 1), name="leadtime_stream_flow_input")
         encoder_inputs_observed_rf = Input(shape=(look, dim_ob), name="observed_rainfall_input")
@@ -154,7 +154,8 @@ class CASTLE:
 
         # Attention layer
         attn_layer = AttentionLayer(name="attention_layer")
-        attn_outputs, attn_states = attn_layer([encoder_outputs, decoder_outputs])
+        print("encoder_out, decoder_out are: ",encoder_outputs, decoder_outputs)
+        attn_outputs, attn_states = attn_layer([encoder_outputs, decoder_outputs,look])
 
         # Concat attention input and decoder GRU output
         decoder_concat_input = concatenate(axis=-1, name="concat_layer")([decoder_outputs, attn_outputs])
