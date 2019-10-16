@@ -9,7 +9,7 @@ from tensorflow import set_random_seed
 
 set_random_seed(2)
 np.random.seed(3)  # for reproducibility
-nb_epoch = 2  # number of epoch at training stage
+nb_epoch = 1000  # number of epoch at training stage
 batch_size = 100  # batch size
 train_test = 3825
 
