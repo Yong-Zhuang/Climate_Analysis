@@ -84,8 +84,11 @@ if __name__ == "__main__":
     )
 
     prediction, attention_weights = clf.predict(test_esf, test_ob, test_fo)
-    atten_df = pd.DataFrame(attention_weights)
-    atten_df.to_csv("attention_weights.csv.gz", index=None, header=True, compression="gzip")
+    print(type(attention_weights), type(attention_weights[0]))
+    print(attention_weights)
+    #atten_df = pd.DataFrame(attention_weights)
+    #atten_df.to_csv("attention_weights.csv.gz", index=None, header=True, compression="gzip")
+    np.save("attention_weights.npy", attention_weights)
     results = {}
     for lead in ["5 days", "7 days", "10 days", "15 days"]:
         results[lead] = {}

@@ -243,19 +243,20 @@ class CASTLE:
         print(encoder_pred.shape, prediction.shape, decoder_inputs_sf.shape)
         state_value = encoder_state
         # Sampling loop for a batch of sequences
-        attention_weights = []
+        attention_weights = np.zeros((encoder_pred.shape[0],decoder_inputs_forecasted_rf.shape[1],encoder_pred.shape[1]))
         for i in range(decoder_inputs_forecasted_rf.shape[1]):
             # input_decoder_streamflow, input_decoder_forecasted_rf, encoder_inf_states, decoder_init_state
             decoder_pred, attn_states, decoder_state = self.decoder_model.predict(
                 [decoder_inputs_sf, decoder_inputs_forecasted_rf[:, i : i + 1]] + [encoder_out, state_value]
             )
-            # print("output shape is "+str(output.shape))
+            print("attn shape is "+str(attn_states.shape))
             prediction = np.append(prediction, decoder_pred[:, -1:], axis=1)
             decoder_pred = decoder_pred.reshape(decoder_pred.shape[0], 1, -1, 1)
             decoder_inputs_sf = np.append(decoder_inputs_sf, decoder_pred, axis=2)
             decoder_inputs_sf = decoder_inputs_sf[:, :, 1:]
             # print (prediction.shape, input_decoder_sf.shape)
-            attention_weights.append((i + 1, attn_states))
+            #attention_weights.append((i + 1, attn_states))
+            attention_weights[:,i,:]=attn_states[:,0,:]
             # Update states
             state_value = decoder_state
         # print(prediction.shape)
