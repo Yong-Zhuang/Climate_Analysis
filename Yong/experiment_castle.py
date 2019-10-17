@@ -5,10 +5,12 @@ import pandas as pd
 from sklearn import metrics
 import get_samples as gs
 import castle
+import random
 from tensorflow import set_random_seed
 
-set_random_seed(2)
+set_random_seed(3)
 np.random.seed(3)  # for reproducibility
+random.seed(3)
 nb_epoch = 1000  # number of epoch at training stage
 batch_size = 100  # batch size
 train_test = 3825
@@ -84,8 +86,8 @@ if __name__ == "__main__":
     )
 
     prediction, attention_weights = clf.predict(test_esf, test_ob, test_fo)
-    print(type(attention_weights), type(attention_weights[0]))
-    print(attention_weights)
+    #print(type(attention_weights), type(attention_weights[0]))
+    #print(attention_weights)
     #atten_df = pd.DataFrame(attention_weights)
     #atten_df.to_csv("attention_weights.csv.gz", index=None, header=True, compression="gzip")
     np.save("attention_weights.npy", attention_weights)
