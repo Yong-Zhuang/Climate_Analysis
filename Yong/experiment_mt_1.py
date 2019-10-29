@@ -228,7 +228,7 @@ def build_model(model,o_conf, f_conf,nlags,kernel_size):
     # plot(model, to_file='model.png', show_shapes=True) 
     return net
 def get_samples(lead,look,is3d,normalization):
-    lead1 = 10
+    lead1 = 15
     look1 = 15
     Qx_Ganges = pd.read_csv(path_data+'X_Ganges.csv')
     idx = []
@@ -298,7 +298,7 @@ def get_samples(lead,look,is3d,normalization):
         #X_te = [Pob[train_validate:],Px[train_validate:],Qx[train_validate:]] 
     
     #else:
-    Pfo = Pob[lead:,:,:,:,:][:,:,-lead:,:,:]
+    Pfo = Pob[lead:,:,:,:,:][:,:,-lead1:,:,:]
     print("pfo shape: "+str(Pfo.shape))
     Pob = Pob[:-lead,:,:,:,:]
     print("pob shape: "+str(Pob.shape))
@@ -525,8 +525,8 @@ if __name__== "__main__":
     history = model.fit(X_tr, Y_tr,
                 epochs=nb_epoch,
                 batch_size=batch_size,
-                #validation_split=0.1,
-                validation_data=(X_te,Y_te),
+                validation_split=0.3,
+                #validation_data=(X_te,Y_te),
                 callbacks=callbacks,
                 verbose=1)
     #history = model.fit(X_tr, Y_train, epochs=nb_epoch, verbose=1, batch_size=batch_size, callbacks=[model_checkpoint, early_stopping,predcall,tb], validation_data=(X_val,Y_val))#early_stopping,
