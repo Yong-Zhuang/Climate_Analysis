@@ -81,7 +81,7 @@ np.save('../Data/total_forecast_precipitation_mean_spread_input_2015.npy',prec)
     #stop =  np.where( (time.year == yr) & (time.month=='09') & (time.day == '30'))[0][0]
     #time.loc[start:stop,'forecast_period'] = 1
 
-print 'Streamflow'
+#Ganges
 ganges = pd.read_csv('../Data/Ganges.csv')
 dates = (ganges.Year >= start_year) & (ganges.Year<=end_year)
 ganges = ganges[dates]
@@ -108,6 +108,65 @@ X_Ganges = ganges[columns]
 
 X_Ganges.to_csv(''.join([dirname,'X_Ganges_2015.csv']))
 Y_Ganges.to_csv(''.join([dirname,'Y_Ganges_2015.csv']))
+
+
+#Brahmaputra
+ganges = pd.read_csv('../Data/Brahmaputra.csv')
+dates = (ganges.Year >= start_year) & (ganges.Year<=end_year)
+ganges = ganges[dates]
+ganges = ganges.reset_index()
+for lag in np.arange(-20,16):
+    new_index = ganges.index + lag
+    x = ganges.loc[new_index, 'Q (m3/s)' ]
+    x = pd.DataFrame(x)
+    x.columns = [''.join(['Q_',str(lag)])]   
+    x.index = ganges.index
+    ganges = pd.concat([ganges,x],axis=1)
+ganges = ganges[ (ganges.Month >= start_month) & (ganges.Month<=end_month)]
+
+columns = ['Date',]
+for lag in np.arange(1,16):
+    columns.append(''.join(['Q_',str(lag)]))
+    
+Y_Ganges = ganges[columns]
+
+columns = ['Date']
+for lag in np.arange(-20,1):
+    columns.append(''.join(['Q_',str(lag)]))    
+X_Ganges = ganges[columns]
+
+X_Ganges.to_csv(''.join([dirname,'X_Brahmaputra_2015.csv']))
+Y_Ganges.to_csv(''.join([dirname,'Y_Brahmaputra_2015.csv']))
+
+
+#Ganges
+ganges = pd.read_csv('../Data/Meghna.csv')
+dates = (ganges.Year >= start_year) & (ganges.Year<=end_year)
+ganges = ganges[dates]
+ganges = ganges.reset_index()
+for lag in np.arange(-20,16):
+    new_index = ganges.index + lag
+    x = ganges.loc[new_index, 'Q (m3/s)' ]
+    x = pd.DataFrame(x)
+    x.columns = [''.join(['Q_',str(lag)])]   
+    x.index = ganges.index
+    ganges = pd.concat([ganges,x],axis=1)
+ganges = ganges[ (ganges.Month >= start_month) & (ganges.Month<=end_month)]
+
+columns = ['Date',]
+for lag in np.arange(1,16):
+    columns.append(''.join(['Q_',str(lag)]))
+    
+Y_Ganges = ganges[columns]
+
+columns = ['Date']
+for lag in np.arange(-20,1):
+    columns.append(''.join(['Q_',str(lag)]))    
+X_Ganges = ganges[columns]
+
+X_Ganges.to_csv(''.join([dirname,'X_Meghna_2015.csv']))
+Y_Ganges.to_csv(''.join([dirname,'Y_Meghna_2015.csv']))
+
 '''########################################################################################################'''
 input_ = '../Data/PERSIANN_1_X_1_withlatlong.nc'
 infile = Dataset(input_,'r')
@@ -147,7 +206,7 @@ DATA=np.zeros((times,nlat,nlon,Nl))
 date0=[]
 for day in np.arange(Nl,1):
     index=np.array(date.index+day)
-    print day,date.iloc[0+day].date
+    print (day,date.iloc[0+day].date)
     DATA[:,:,:,day] = Oprecip[index,:,:]
     date0.append([day,date.loc[index[0]].date])    
 
