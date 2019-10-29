@@ -223,7 +223,7 @@ def build_model(model,o_conf, f_conf,nlags,kernel_size):
     elif model.lower() == 'convlstm3d':
         net = convLSTM.net(o_conf, f_conf, external_dim,'1')
     net= compile_model(net)
-    net.summary()
+    #net.summary()
     # from keras.utils.visualize_util import plot
     # plot(model, to_file='model.png', show_shapes=True) 
     return net
@@ -276,14 +276,14 @@ def get_samples(lead,look,is3d,normalization):
     time,external_dim=Qx_Ganges.shape
     samples, timesteps, map_height, map_width  = Pob.shape 
     channels = 1
-    if is3d==0:
+#    if is3d==0:
 #         Px_mean = np.moveaxis(Px_mean,3,1) 
 #         samples, timesteps, map_height, map_width = Px_mean.shape 
 #         Px_spread = np.moveaxis(Px_spread,3,1) 
-    else:   
+#    else:   
 #         Px_mean = Px_mean[:,np.newaxis,:,:,:]
 #         Px_mean = np.moveaxis(Px_mean,4,2)  
-        Pob = Pob[:,np.newaxis,:,:,:]
+    Pob = Pob[:,np.newaxis,:,:,:]
 #         samples, __,timesteps, map_height, map_width = Px_mean.shape 
 #         Px_spread = Px_spread[:,np.newaxis,:,:,:]
 #         Px_spread = np.moveaxis(Px_spread,4,2)
@@ -298,16 +298,21 @@ def get_samples(lead,look,is3d,normalization):
         #X_te = [Pob[train_validate:],Px[train_validate:],Qx[train_validate:]] 
     
     #else:
-    Pfo = Pob[lead:,:,:,:][:,-lead:,:,:]
-    Pob = Pob[:-lead,:,:,:]
+    Pfo = Pob[lead:,:,:,:,:][:,:,-lead:,:,:]
+    print("pfo shape: "+str(Pfo.shape))
+    Pob = Pob[:-lead,:,:,:,:]
+    print("pob shape: "+str(Pob.shape))
     Qx_Ganges = Qx_Ganges[:-lead]
+    Qy_Ganges = Qy_Ganges[:-lead]
     Qx_Brahmaputra = Qx_Brahmaputra[:-lead]
+    Qy_Brahmaputra = Qy_Brahmaputra[:-lead]
     Qx_Meghna = Qx_Meghna[:-lead]
-    
+    Qy_Meghna = Qy_Meghna[:-lead]
+   
     X_tr = [Pob[0:train_validate],Pfo[0:train_validate],Qx_Ganges[0:train_validate],Qx_Brahmaputra[0:train_validate],Qx_Meghna[0:train_validate]] 
     #X_val = [Px_mean[test_train:train_validate],Px_spread[test_train:train_validate],Qx[test_train:train_validate]] 
     X_te = [Pob[train_validate:],Pfo[train_validate:],Qx_Ganges[train_validate:],Qx_Brahmaputra[train_validate:],Qx_Meghna[train_validate:]]
-
+    
     #X_tr = [Px_spread[0:test_train],Qx[0:test_train]] 
     #X_val = [Px_spread[test_train:train_validate],Qx[test_train:train_validate]] 
     #X_te = [Px_spread[train_validate:],Qx[train_validate:]] 
