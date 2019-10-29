@@ -300,6 +300,9 @@ def get_samples(lead,look,is3d,normalization):
     #else:
     Pfo = Pob[lead:,:,:,:][:,-lead:,:,:]
     Pob = Pob[:-lead,:,:,:]
+    Qx_Ganges = Qx_Ganges[:-lead]
+    Qx_Brahmaputra = Qx_Brahmaputra[:-lead]
+    Qx_Meghna = Qx_Meghna[:-lead]
     
     X_tr = [Pob[0:train_validate],Pfo[0:train_validate],Qx_Ganges[0:train_validate],Qx_Brahmaputra[0:train_validate],Qx_Meghna[0:train_validate]] 
     #X_val = [Px_mean[test_train:train_validate],Px_spread[test_train:train_validate],Qx[test_train:train_validate]] 
