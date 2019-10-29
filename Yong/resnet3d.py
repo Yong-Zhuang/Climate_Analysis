@@ -781,3 +781,46 @@ def net_mt5(o_conf=(15, 1, 32, 32),f_conf=(15, 1, 32, 32), external_dim=5,mode=1
     
     
     return model
+
+def net_mt_1(o_conf=(15, 1, 32, 32),f_conf=(15, 1, 32, 32), external_dim=5,mode=18):#121 169 201 264 161
+    lead, f_channels, f_height, f_width = f_conf
+    look, o_channels, o_height, o_width = o_conf
+    o_shape = (o_channels, look , o_height, o_width)
+    f_shape = (f_channels, lead, f_height, f_width)
+    pl = 'nan'
+    dp = None
+    input1 = Input(shape=f_shape) 
+#     input2 = Input(shape=f_shape) 
+#     input_fusion = concatenate([input1, input2],axis = 2)
+#     print ('ifusion shape: '+str(input_fusion.shape))
+    if mode==4:
+        res_net0 = ResNet4(input_shape=o_shape, pooling=pl,dropout=dp)
+        res_net1 = ResNet4(input_tensor=input1, pooling=pl,dropout=dp)
+    elif mode==18:
+        res_net0 = ResNet18(input_shape=o_shape, pooling=pl,dropout=dp)
+        res_net1 = ResNet18(input_tensor=input1, pooling=pl,dropout=dp)
+    elif mode==34:
+        res_net0 = ResNet34(input_shape=o_shape, pooling=pl,dropout=dp)
+        res_net1 = ResNet34(input_tensor=input1, pooling=pl,dropout=dp)
+    elif mode==50:
+        res_net0 = ResNet50(input_shape=o_shape, pooling=pl,dropout=dp)
+        res_net1 = ResNet50(input_tensor=input1, pooling=pl,dropout=dp)
+    elif mode==101:
+        res_net0 = ResNet101(input_shape=o_shape, pooling=pl,dropout=dp)
+        res_net1 = ResNet101(input_tensor=input1, pooling=pl,dropout=dp)
+    else:
+        res_net0 = ResNet152(input_shape=o_shape, pooling=pl,dropout=dp)
+        res_net1 = ResNet152(input_tensor=input1, pooling=pl,dropout=dp)
+    for layer in res_net0.layers:
+        layer.trainable = True
+    x0 = res_net0.output
+    for layer in res_net1.layers:
+        layer.name = layer.name + str("_1")
+        layer.trainable = True
+    x1 = res_net1.output
+    x3 = Input((external_dim,))
+    x4 = Input((external_dim,))
+    x5 = Input((external_dim,))
+    f = fusion.net_mt2(x0,x1,x3,x4,x5)
+    model = Model(inputs=[res_net0.input,input1,x3,x4,x5], outputs=f)  
+    return model
